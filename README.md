@@ -1,111 +1,292 @@
 
-# Data Normalizer & Integrator Microservice  
+# Data Normalizer & Integrator Microservice
 **Elasticsearch-powered product ingestion and normalization for a multi-merchant marketplace**
 
 ---
 
 ## Overview
 
-This project implements a **Data Normalizer + Integrator** microservice for an e-commerce marketplace that does not own products itself.  
+This project implements a **Data Normalizer + Integrator** microservice for an e-commerce marketplace that does not own products itself.
 The marketplace works with small and medium merchants using different platforms such as **WooCommerce, Magento, PrestaShop, and OpenCart**.
 
-The service collects product data from merchants, normalizes and standardizes it, handles missing and inconsistent data, detects similar or duplicate products, and indexes the cleaned data into **Elasticsearch**.  
+The service collects product data from merchants, normalizes and standardizes it, handles missing and inconsistent data, detects similar or duplicate products, and indexes the cleaned data into **Elasticsearch**.
 Each merchant keeps full ownership of their products through **offers**, while buyers can easily search, compare, and choose the best option.
 
 ---
 
 ## Key Goals
 
-- Integrate product data from heterogeneous merchant platforms  
-- Normalize formats, attributes, units, and currencies  
-- Automatically map merchant categories to marketplace categories  
-- Detect and link similar or duplicate products without removing merchant data  
-- Preserve merchant rights through offer-based modeling  
-- Provide fast and accurate search using Elasticsearch  
-- Support scalability, monitoring, and GDPR compliance  
+- Integrate product data from heterogeneous merchant platforms
+- Normalize formats, attributes, units, and currencies
+- Automatically map merchant categories to marketplace categories
+- Detect and link similar or duplicate products without removing merchant data
+- Preserve merchant rights through offer-based modeling
+- Provide fast and accurate search using Elasticsearch
+- Support scalability, monitoring, and GDPR compliance
 
 ---
 
 ## System Actors
 
-- **Merchant** – Provides product data and manages offers  
-- **Buyer** – Searches and compares products  
-- **Marketplace Admin** – Manages merchants, mappings, and reviews  
-- **Data Reviewer** – Reviews uncertain matches and sensitive products  
-- **External Merchant Platforms** – WooCommerce, Magento, etc.  
-- **Elasticsearch** – Search and analytics engine  
+- **Merchant** – Provides product data and manages offers
+- **Buyer** – Searches and compares products
+- **Marketplace Admin** – Manages merchants, mappings, and reviews
+- **Data Reviewer** – Reviews uncertain matches and sensitive products
+- **External Merchant Platforms** – WooCommerce, Magento, PrestaShop, OpenCart
+- **Elasticsearch** – Search and analytics engine
 
 ---
 
 ## Core Use Cases
 
 ### UC-01: Onboard Merchant
-Register a new merchant and configure how their product data will be collected (API, webhook, CSV, or scraping).  
-**Outcome:** Merchant is ready to send or sync product data.
+**Actor:** Marketplace Admin
+
+**Description:**  
+Register a new merchant and configure how their product data will be integrated into the system. This ensures secure and reliable data exchange.
+
+**Steps:**
+- Admin creates a merchant account
+- Selects integration method (API, webhook, CSV, scraping)
+- Stores credentials or connection details
+- Assigns initial trust score
+- Activates merchant
+
+**Outcome:**  
+Merchant is ready to send or be synced for product data.
+
+---
 
 ### UC-02: Ingest Product Data
-Receive raw product data from merchant systems and store it unchanged for traceability.  
-**Outcome:** Raw data is safely stored and queued for processing.
+**Actors:** Merchant Platform, System
+
+**Description:**  
+Receive raw product data from merchants either by push or pull mechanisms and store it unchanged for traceability.
+
+**Steps:**
+- Receive or fetch product data
+- Validate basic structure
+- Store raw payload
+- Queue data for processing
+
+**Outcome:**  
+Raw merchant data is safely stored and ready for normalization.
+
+---
 
 ### UC-03: Normalize Product Data
-Standardize product titles, descriptions, attributes, units, and currencies into a common structure.  
-**Outcome:** Clean, consistent, comparable product data.
+**Actor:** System
 
-### UC-04: Automatically Map Categories
-Map merchant-specific categories to marketplace categories using rules or ML.  
-**Outcome:** Unified category structure across all merchants.
+**Description:**  
+Clean and standardize incoming product data so it follows a unified internal format.
+
+**Steps:**
+- Normalize text fields
+- Convert units and currencies
+- Standardize attributes
+- Detect missing fields
+- Add normalization flags
+
+**Outcome:**  
+Consistent and comparable product data across merchants.
+
+---
+
+### UC-04: Map Categories Automatically
+**Actor:** System
+
+**Description:**  
+Automatically map merchant categories to marketplace categories using rules or machine learning.
+
+**Steps:**
+- Analyze merchant category
+- Apply mapping logic
+- Assign marketplace category
+- Flag low-confidence results
+
+**Outcome:**  
+Unified product categorization.
+
+---
 
 ### UC-05: Detect Similar or Duplicate Products
-Identify products that represent the same real-world item and link them without removing merchant ownership.  
-**Outcome:** Related products are intelligently connected.
+**Actor:** System
+
+**Description:**  
+Identify products that represent the same real-world item while preserving merchant ownership.
+
+**Steps:**
+- Generate match candidates
+- Calculate similarity scores
+- Link related products
+- Flag uncertain cases
+
+**Outcome:**  
+Related products are linked without removing merchant data.
+
+---
 
 ### UC-06: Create or Update Merchant Offers
-Create merchant-specific offers containing price, stock, delivery, and warranty details.  
-**Outcome:** Multiple offers can exist for the same product.
+**Actor:** System
+
+**Description:**  
+Create offers that represent merchant-specific selling conditions.
+
+**Steps:**
+- Create or update offer
+- Assign price, stock, delivery
+- Attach trust score
+- Link to product
+
+**Outcome:**  
+Multiple merchant offers per product.
+
+---
 
 ### UC-07: Index Data into Elasticsearch
-Index products and offers for fast search and filtering.  
-**Outcome:** High-performance, accurate search results.
+**Actor:** System
+
+**Description:**  
+Index normalized products and offers for fast search and filtering.
+
+**Steps:**
+- Index products
+- Index offers
+- Update search documents
+
+**Outcome:**  
+Fast and accurate search results.
 
 ---
 
 ## Buyer Use Cases
 
 ### UC-08: Search Products
-Buyers search for products using keywords and filters.  
-**Outcome:** Relevant products are returned quickly.
+**Actor:** Buyer
+
+**Description:**  
+Allow buyers to search for products using keywords and filters.
+
+**Steps:**
+- Enter query
+- Execute search
+- Display results
+
+**Outcome:**  
+Relevant products returned quickly.
+
+---
 
 ### UC-09: Compare Merchant Offers
-Buyers compare prices, delivery times, warranties, and trust scores.  
-**Outcome:** Buyers make informed purchasing decisions.
+**Actor:** Buyer
+
+**Description:**  
+Enable buyers to compare different offers for the same product.
+
+**Steps:**
+- View offers
+- Sort and filter
+- Choose merchant
+
+**Outcome:**  
+Transparent and informed purchasing decisions.
 
 ---
 
 ## Administrative & Control Use Cases
 
 ### UC-10: Review Product Matching Suggestions
-Admins review uncertain duplicate matches without blocking the pipeline.  
-**Outcome:** Matching accuracy improves over time.
+**Actors:** Admin / Data Reviewer
+
+**Description:**  
+Review system-suggested product matches when confidence is low.
+
+**Steps:**
+- View suggestions
+- Approve or reject
+- Save decision
+
+**Outcome:**  
+Improved matching accuracy.
+
+---
 
 ### UC-11: Review Sensitive Products
-Admins review flagged products (alcohol, medical, children).  
-**Outcome:** Regulatory compliance is ensured.
+**Actor:** Admin
 
-### UC-12: Manage Category & Attribute Mappings
-Admins adjust mappings to improve normalization quality.  
-**Outcome:** Continuous data quality improvement.
+**Description:**  
+Review products that require special approval such as alcohol or medical items.
+
+**Steps:**
+- Review flagged products
+- Approve or restrict
+
+**Outcome:**  
+Regulatory compliance without blocking ingestion.
+
+---
+
+### UC-12: Manage Category and Attribute Mappings
+**Actor:** Admin
+
+**Description:**  
+Improve automatic mappings through manual adjustments.
+
+**Steps:**
+- Edit mappings
+- Apply changes
+- Reprocess if needed
+
+**Outcome:**  
+Higher data quality.
+
+---
 
 ### UC-13: Handle Processing Errors
-Automatically retry failed jobs and store unresolved issues for review.  
-**Outcome:** System remains reliable and fault-tolerant.
+**Actor:** System
 
-### UC-14: Track Data Source & History
-View raw data and normalization steps for any product.  
-**Outcome:** Full transparency and auditability.
+**Description:**  
+Automatically handle ingestion and processing errors.
+
+**Steps:**
+- Detect error
+- Retry processing
+- Store failures
+- Notify admin
+
+**Outcome:**  
+System reliability.
+
+---
+
+### UC-14: Track Data Source and History
+**Actor:** Admin
+
+**Description:**  
+Trace products back to their original source.
+
+**Steps:**
+- View raw data
+- View normalization history
+
+**Outcome:**  
+Full transparency and auditability.
+
+---
 
 ### UC-15: Handle GDPR Requests
-Support deletion and anonymization of data on request.  
-**Outcome:** GDPR compliance and user trust.
+**Actor:** Admin
+
+**Description:**  
+Support GDPR-related data requests.
+
+**Steps:**
+- Receive request
+- Delete or anonymize data
+- Log actions
+
+**Outcome:**  
+GDPR compliance.
 
 ---
 
@@ -117,18 +298,24 @@ Merchant Platforms
 → Data Normalizer & Integrator  
 → PostgreSQL (Raw + Normalized Data)  
 → Elasticsearch (Products & Offers)  
-→ Marketplace Search & Admin Tools  
+→ Marketplace Search & Admin Tools
 
 ---
 
 ## Technology Stack (Suggested)
 
-- Backend: Python (FastAPI) or Node.js (NestJS)  
-- Queue: RabbitMQ or Kafka  
-- Database: PostgreSQL  
-- Search: Elasticsearch  
-- Admin UI: React  
-- Deployment: Docker / Docker Compose  
+- Backend: Python (FastAPI) or Node.js (NestJS)
+- Queue: RabbitMQ or Kafka
+- Database: PostgreSQL
+- Search: Elasticsearch
+- Admin UI: React
+- Deployment: Docker / Docker Compose
+
+---
+
+## Project Context
+
+This project is developed as part of a **special topic course** and focuses on real-world challenges in marketplace data integration, normalization, and search.
 
 ---
 
