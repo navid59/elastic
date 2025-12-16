@@ -1,0 +1,377 @@
+openapi: 3.0.3
+info:
+  title: Data Normalizer & Integrator API
+  description: >
+    API for ingesting, normalizing, matching, and indexing merchant product data
+    for a multi-merchant marketplace using Elasticsearch.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080/api
+    description: Local development server
+
+tags:
+  - name: Merchants
+  - name: Ingestion
+  - name: Normalization
+  - name: Categories
+  - name: Matching
+  - name: Offers
+  - name: Search
+  - name: Admin
+  - name: GDPR
+
+paths:
+
+  # =========================
+  # UC-01: Onboard Merchant
+  # =========================
+  /merchants:
+    post:
+      tags: [Merchants]
+      summary: Register a new merchant
+      description: Create and configure a merchant for data integration.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MerchantCreate"
+      responses:
+        "201":
+          description: Merchant created successfully
+
+  # =========================
+  # UC-02: Ingest Product Data
+  # =========================
+  /ingest/products:
+    post:
+      tags: [Ingestion]
+      summary: Ingest raw product data
+      description: Receive raw product data from merchant platforms.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RawProductPayload"
+      responses:
+        "202":
+          description: Product data accepted for processing
+
+  # =========================
+  # UC-03: Normalize Product Data
+  # =========================
+  /normalize/{ingestId}:
+    post:
+      tags: [Normalization]
+      summary: Normalize ingested product data
+      description: Normalize raw product data into standard format.
+      parameters:
+        - name: ingestId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Product data normalized
+
+  # =========================
+  # UC-04: Map Categories Automatically
+  # =========================
+  /categories/map:
+    post:
+      tags: [Categories]
+      summary: Map merchant category to marketplace category
+      description: Automatically map merchant categories using rules or ML.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryMappingRequest"
+      responses:
+        "200":
+          description: Category mapped successfully
+
+  # =========================
+  # UC-05: Detect Similar / Duplicate Products
+  # =========================
+  /products/match:
+    post:
+      tags: [Matching]
+      summary: Detect similar or duplicate products
+      description: Identify and link similar products from different merchants.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductMatchRequest"
+      responses:
+        "200":
+          description: Matching completed
+
+  # =========================
+  # UC-06: Create or Update Merchant Offers
+  # =========================
+  /offers:
+    post:
+      tags: [Offers]
+      summary: Create or update an offer
+      description: Create or update a merchant-specific offer.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OfferCreate"
+      responses:
+        "201":
+          description: Offer created or updated
+
+  # =========================
+  # UC-07: Index Data into Elasticsearch
+  # =========================
+  /index/rebuild:
+    post:
+      tags: [Admin]
+      summary: Rebuild Elasticsearch index
+      description: Reindex all products and offers into Elasticsearch.
+      responses:
+        "202":
+          description: Reindexing started
+
+  # =========================
+  # UC-08: Search Products
+  # =========================
+  /search/products:
+    get:
+      tags: [Search]
+      summary: Search products
+      description: Full-text search over normalized product data.
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: brand
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Search results returned
+
+  # =========================
+  # UC-09: Compare Merchant Offers
+  # =========================
+  /products/{productId}/offers:
+    get:
+      tags: [Offers]
+      summary: Get offers for a product
+      description: Retrieve all merchant offers for a specific product.
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of offers returned
+
+  # =========================
+  # UC-10: Review Product Matching Suggestions
+  # =========================
+  /admin/matches/review:
+    post:
+      tags: [Admin]
+      summary: Review product match suggestions
+      description: Approve or reject suggested product matches.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MatchReview"
+      responses:
+        "200":
+          description: Review decision saved
+
+  # =========================
+  # UC-11: Review Sensitive Products
+  # =========================
+  /admin/products/review:
+    post:
+      tags: [Admin]
+      summary: Review sensitive products
+      description: Approve or restrict flagged products.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductReview"
+      responses:
+        "200":
+          description: Product review completed
+
+  # =========================
+  # UC-12: Manage Category & Attribute Mappings
+  # =========================
+  /admin/mappings:
+    put:
+      tags: [Admin]
+      summary: Update category or attribute mappings
+      description: Modify mapping rules used by the normalizer.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MappingUpdate"
+      responses:
+        "200":
+          description: Mappings updated
+
+  # =========================
+  # UC-13: Handle Processing Errors
+  # =========================
+  /admin/errors:
+    get:
+      tags: [Admin]
+      summary: View processing errors
+      description: Retrieve failed ingestion or normalization records.
+      responses:
+        "200":
+          description: Error list returned
+
+  # =========================
+  # UC-14: Track Data Source & History
+  # =========================
+  /admin/products/{productId}/history:
+    get:
+      tags: [Admin]
+      summary: Get product data history
+      description: View raw data and normalization history for a product.
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Product history returned
+
+  # =========================
+  # UC-15: Handle GDPR Requests
+  # =========================
+  /gdpr/delete:
+    post:
+      tags: [GDPR]
+      summary: Delete or anonymize data
+      description: Handle GDPR deletion or anonymization requests.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GdprRequest"
+      responses:
+        "200":
+          description: GDPR request processed
+
+components:
+  schemas:
+
+    MerchantCreate:
+      type: object
+      required: [name, integrationType]
+      properties:
+        name:
+          type: string
+        integrationType:
+          type: string
+          example: api
+        trustScore:
+          type: number
+          format: float
+
+    RawProductPayload:
+      type: object
+      properties:
+        merchantId:
+          type: string
+        data:
+          type: object
+
+    CategoryMappingRequest:
+      type: object
+      properties:
+        merchantCategory:
+          type: string
+
+    ProductMatchRequest:
+      type: object
+      properties:
+        productIds:
+          type: array
+          items:
+            type: string
+
+    OfferCreate:
+      type: object
+      properties:
+        productId:
+          type: string
+        merchantId:
+          type: string
+        price:
+          type: number
+        currency:
+          type: string
+        stock:
+          type: integer
+
+    MatchReview:
+      type: object
+      properties:
+        matchId:
+          type: string
+        decision:
+          type: string
+          enum: [approve, reject]
+
+    ProductReview:
+      type: object
+      properties:
+        productId:
+          type: string
+        approved:
+          type: boolean
+
+    MappingUpdate:
+      type: object
+      properties:
+        type:
+          type: string
+          example: category
+        rules:
+          type: object
+
+    GdprRequest:
+      type: object
+      properties:
+        subjectId:
+          type: string
+        action:
+          type: string
+          enum: [delete, anonymize]
+
